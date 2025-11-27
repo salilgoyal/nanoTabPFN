@@ -1,5 +1,7 @@
 import random
+import sys
 import time
+from datetime import datetime
 
 import h5py
 import numpy as np
@@ -11,6 +13,27 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score, roc_auc_sco
 from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.utils.data import DataLoader
+
+
+class Tee:
+    """A class to duplicate output to both stdout and a file."""
+    def __init__(self, file_path):
+        self.file = open(file_path, 'w', encoding='utf-8')
+        self.stdout = sys.stdout
+        sys.stdout = self
+
+    def write(self, data):
+        self.file.write(data)
+        self.stdout.write(data)
+        self.file.flush()
+
+    def flush(self):
+        self.file.flush()
+        self.stdout.flush()
+
+    def close(self):
+        sys.stdout = self.stdout
+        self.file.close()
 
 
 def set_randomness_seed(seed):
@@ -171,15 +194,43 @@ class PriorDumpDataLoader(DataLoader):
         return self.num_steps
 
 if __name__ == "__main__":
-    device = get_default_device()
-    model = NanoTabPFNModel(
-        embedding_size=96,
-        num_attention_heads=4,
-        mlp_hidden_size=192,
-        num_layers=3,
-        num_outputs=2
-    )
-    prior = PriorDumpDataLoader("300k_150x5_2.h5", num_steps=2500, batch_size=32, device=device)
-    model, history = train(model, prior, lr=4e-3, steps_per_eval=25)
-    print("Final evaluation:")
-    print(eval(NanoTabPFNClassifier(model, device)))
+    # Set up logging to file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = f"training_log_{timestamp}.txt"
+    tee = Tee(log_filename)
+    
+    try:
+        print(f"Training started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Logging output to: {log_filename}")
+        
+        device = get_default_device()
+        print(f"Using device: {device}")
+        
+        model = NanoTabPFNModel(
+            embedding_size=96,
+            num_attention_heads=4,
+            mlp_hidden_size=192,
+            num_layers=3,
+            num_outputs=2
+        )
+        prior = PriorDumpDataLoader("300k_150x5_2.h5", num_steps=2500, batch_size=32, device=device)
+        model, history = train(model, prior, lr=4e-3, steps_per_eval=25, eval_func=eval)
+        
+        print("Final evaluation:")
+        final_scores = eval(NanoTabPFNClassifier(model, device))
+        print(final_scores)
+        
+        # Save the trained model
+        model_filename = f"trained_model_{timestamp}.pth"
+        torch.save(model.state_dict(), model_filename)
+        print(f"Model saved to: {model_filename}")
+        
+        # Optionally save the full model (including architecture)
+        model_full_filename = f"trained_model_full_{timestamp}.pth"
+        torch.save(model, model_full_filename)
+        print(f"Full model saved to: {model_full_filename}")
+        
+        print(f"Training completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+    finally:
+        tee.close()
