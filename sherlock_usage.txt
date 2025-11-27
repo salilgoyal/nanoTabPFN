@@ -1,0 +1,9 @@
+[salilg@sh02-ln01 login ~]$ ml python/3.12
+[salilg@sh02-ln01 login ~]$ which python
+/usr/bin/python
+[salilg@sh02-ln01 login ~]$ python3 --version
+Python 3.12.1
+[salilg@sh02-ln01 login ~]$ ml devel
+[salilg@sh02-ln01 login ~]$ ml py-h5py/3.10.0_py312
+[salilg@sh02-ln01 login ~]$ ml py-pyarrow/18.1.0_py312
+[salilg@sh02-ln01 login ~]$ source /scratch/users/salilg/envs/tabpfn_env/.venv/bin/activate
