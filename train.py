@@ -1,3 +1,4 @@
+import os
 import random
 import sys
 import time
@@ -5,6 +6,7 @@ from datetime import datetime
 
 import h5py
 import numpy as np
+import pandas as pd
 import schedulefree
 import torch
 from model import NanoTabPFNClassifier, NanoTabPFNModel
@@ -194,9 +196,11 @@ class PriorDumpDataLoader(DataLoader):
         return self.num_steps
 
 if __name__ == "__main__":
-    # Set up logging to file
+    # Set up logging and results directories
+    os.makedirs("logs", exist_ok=True)
+    os.makedirs("results", exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_filename = f"training_log_{timestamp}.txt"
+    log_filename = f"logs/training_log_{timestamp}.txt"
     tee = Tee(log_filename)
     
     try:
@@ -219,6 +223,23 @@ if __name__ == "__main__":
         print("Final evaluation:")
         final_scores = eval(NanoTabPFNClassifier(model, device))
         print(final_scores)
+
+        # Save final evaluation results to CSV
+        results_df = pd.DataFrame([{
+            "timestamp": timestamp,
+            "embedding_size": 96,
+            "num_attention_heads": 4,
+            "mlp_hidden_size": 192,
+            "num_layers": 3,
+            "num_outputs": 2,
+            "num_steps": 2500,
+            "batch_size": 32,
+            "learning_rate": 4e-3,
+            **final_scores
+        }])
+        results_filename = f"results/evaluation_{timestamp}.csv"
+        results_df.to_csv(results_filename, index=False)
+        print(f"Evaluation results saved to: {results_filename}")
         
         # Save the trained model
         model_filename = f"trained_model_{timestamp}.pth"
