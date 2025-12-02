@@ -1,0 +1,2 @@
+timestamp,embedding_size,num_attention_heads,mlp_hidden_size,num_layers,num_outputs,num_steps,batch_size,learning_rate,roc_auc,acc,balanced_acc
+20251201_180811,96,4,192,3,2,2500,32,0.004,0.026851054670684465,0.9263157894736842,0.9116713301764959
